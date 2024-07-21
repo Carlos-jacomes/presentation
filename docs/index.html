@@ -1,0 +1,46 @@
+---
+title: "Lista 4"
+author: "Carlos Jacomes"
+date: "2024-07-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(broom)
+
+# Carregar os dados do Excel
+classificacao <- read_excel("C:/Users/User/OneDrive/Documentos/metodos/classificacao.xlsx")
+head(classificacao)
+
+
+total_n <- nrow(classificacao)
+proporcoes <- classificacao %>%
+  group_by(`Cor/raça`, `Classificação da ocupação`) %>%
+  summarise(n = n(), .groups= 'drop') %>%
+  mutate(proporcao = n / total_n,
+         ci = map(n, ~binom.test(.x, total_n)$conf.int),
+         lower_ci = map_dbl(ci, 1),
+         upper_ci = map_dbl(ci, 2))
+
+```
+
+```{r}
+
+ggplot(proporcoes, aes(x = `Classificação da ocupação`, y = proporcao, fill = `Cor/raça`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), position = position_dodge(width = 0.9), width = 0.2) +
+  labs(title = "Distribuição Racial por Classe Social das Candidaturas nas Eleições de 2022",
+       x = "Classificação da Ocupação",
+       y = "Proporção") +
+  theme_minimal()
+
+```
+
+
+Hipótese: candidaturas de candidatos não branco(a)s se concentram nas classes mais baixas e de brancos se concentram nas classes mais altas. 
